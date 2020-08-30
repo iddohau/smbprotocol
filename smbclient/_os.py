@@ -1093,7 +1093,7 @@ class SMBDirEntry(object):
         """
         return self._dir_info['file_id'].get_value()
 
-    def is_dir(self, follow_symlinks=True):
+    def is_dir(self, follow_symlinks=True, **kwargs):
         """
         Return 'True' if this entry is a directory or a symbolic link pointing to a directory; return 'False' if the
         entry is or points to any other kind of file, or if it doesn't exist anymore.
@@ -1110,7 +1110,7 @@ class SMBDirEntry(object):
             (False) if the entry is a symlink.
         :return: bool that states whether the entry is a directory or not.
         """
-        is_lnk = self.is_symlink()
+        is_lnk = self.is_symlink(**kwargs)
         if follow_symlinks and is_lnk:
             return self._link_target_type_check(py_stat.S_ISDIR)
         else:
@@ -1142,7 +1142,7 @@ class SMBDirEntry(object):
             return not is_lnk and \
                 not self._dir_info['file_attributes'].has_flag(FileAttributes.FILE_ATTRIBUTE_DIRECTORY)
 
-    def is_symlink(self):
+    def is_symlink(self, **kwargs):
         """
         Return 'True' if this entry is a symbolic link (even if broken); return 'False' if the entry points to a
         directory or any kind of file.
@@ -1159,12 +1159,12 @@ class SMBDirEntry(object):
             # While a symlink is a reparse point, all reparse points aren't symlinks. We need to get the reparse tag
             # to use as our check. Unlike WIN32_FILE_DATA scanned locally, we don't get the reparse tag in the original
             # query result. We need to do a separate stat call to get this information.
-            lstat = self.stat(follow_symlinks=False)
+            lstat = self.stat(follow_symlinks=False, **kwargs)
             return lstat.st_reparse_tag == ReparseTags.IO_REPARSE_TAG_SYMLINK
         else:
             return False
 
-    def stat(self, follow_symlinks=True):
+    def stat(self, follow_symlinks=True, **kwargs):
         """
         Return a SMBStatResult object for this entry. This method follows symbolic links by default; to stat a symbolic
         link without following add the 'follow_symlinks=False' argument.
@@ -1179,17 +1179,17 @@ class SMBDirEntry(object):
         """
         if follow_symlinks:
             if not self._stat:
-                if self.is_symlink():
-                    self._stat = stat(self.path)
+                if self.is_symlink(**kwargs):
+                    self._stat = stat(self.path, **kwargs)
                 else:
                     # Because it's not a symlink lstat will be the same as stat so set both.
                     if self._lstat is None:
-                        self._lstat = lstat(self._smb_raw.name)
+                        self._lstat = lstat(self._smb_raw.name, **kwargs)
                     self._stat = self._lstat
             return self._stat
         else:
             if not self._lstat:
-                self._lstat = lstat(self.path)
+                self._lstat = lstat(self.path, **kwargs)
             return self._lstat
 
     @classmethod
@@ -1205,9 +1205,9 @@ class SMBDirEntry(object):
         dir_entry._stat = file_stat
         return dir_entry
 
-    def _link_target_type_check(self, check):
+    def _link_target_type_check(self, check, **kwargs):
         try:
-            return check(self.stat(follow_symlinks=True).st_mode)
+            return check(self.stat(follow_symlinks=True, **kwargs).st_mode)
         except OSError as err:
             if err.errno == errno.ENOENT:  # Missing target, broken symlink just return False
                 return False

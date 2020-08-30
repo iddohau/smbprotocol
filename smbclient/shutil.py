@@ -404,22 +404,22 @@ def rmtree(path, ignore_errors=False, onerror=None, **kwargs):
         # In case the entry is a directory symbolic link we need to remove the dir itself and not recurse down into
         # it with rmtree. Doing that would result in a symbolic link target having it's contents removed even if it's
         # outside the rmtree scope.
-        if dir_entry.is_symlink() and \
+        if dir_entry.is_symlink(**kwargs) and \
                 dir_entry.stat(follow_symlinks=False).st_file_attributes & FileAttributes.FILE_ATTRIBUTE_DIRECTORY:
             try:
-                rmdir(dir_entry.path)
+                rmdir(dir_entry.path, **kwargs)
             except OSError:
                 onerror(rmdir, dir_entry.path, sys.exc_info())
-        elif dir_entry.is_dir():
-            rmtree(dir_entry.path, ignore_errors, onerror)
+        elif dir_entry.is_dir(**kwargs):
+            rmtree(dir_entry.path, ignore_errors, onerror, **kwargs)
         else:
             try:
-                remove(dir_entry.path)
+                remove(dir_entry.path, **kwargs)
             except OSError:
                 onerror(remove, dir_entry.path, sys.exc_info())
 
     try:
-        rmdir(path)
+        rmdir(path, **kwargs)
     except OSError:
         onerror(rmdir, path, sys.exc_info())
 
@@ -432,8 +432,8 @@ def _copy(src, dst, follow_symlinks, copy_meta_func, **kwargs):
     elif os.path.isdir(dst):
         dst = os.path.join(dst, os.path.basename(src))
 
-    copyfile(src, dst, follow_symlinks=follow_symlinks)
-    copy_meta_func(src, dst, follow_symlinks=follow_symlinks)
+    copyfile(src, dst, follow_symlinks=follow_symlinks, **kwargs)
+    copy_meta_func(src, dst, follow_symlinks=follow_symlinks, **kwargs)
     return dst
 
 
