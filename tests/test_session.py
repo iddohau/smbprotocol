@@ -20,7 +20,6 @@ from smbprotocol.exceptions import (
 )
 
 from smbprotocol.session import (
-    NtlmContext,
     Session,
     SMB2Logoff,
     SMB2SessionSetupRequest,
@@ -121,36 +120,6 @@ class TestSMB2Logoff(object):
         assert actual['reserved'].get_value() == 0
 
 
-class TestNtlmContext(object):
-
-    def test_no_username_fail(self):
-        with pytest.raises(SMBException) as exc:
-            NtlmContext(None, None)
-        assert str(exc.value) == "The username must be set when using NTLM " \
-                                 "authentication"
-
-    def test_no_password_fail(self):
-        with pytest.raises(SMBException) as exc:
-            NtlmContext("username", None)
-        assert str(exc.value) == "The password must be set when using NTLM " \
-                                 "authentication"
-
-    def test_username_without_domain(self):
-        actual = NtlmContext("username", "password")
-        assert actual.domain == ""
-        assert actual.username == "username"
-
-    def test_username_in_netlogon_form(self):
-        actual = NtlmContext("DOMAIN\\username", "password")
-        assert actual.domain == "DOMAIN"
-        assert actual.username == "username"
-
-    def test_username_in_upn_form(self):
-        actual = NtlmContext("username@DOMAIN.LOCAL", "password")
-        assert actual.domain == ""
-        assert actual.username == "username@DOMAIN.LOCAL"
-
-
 class TestSession(object):
 
     def test_dialect_2_0_2(self, smb_real):
@@ -164,7 +133,8 @@ class TestSession(object):
             assert session.decryption_key is None
             assert not session.encrypt_data
             assert session.encryption_key is None
-            assert len(session.preauth_integrity_hash_value) == 5
+            assert len(session.connection.preauth_integrity_hash_value) == 2
+            assert len(session.preauth_integrity_hash_value) == 3
             assert not session.require_encryption
             assert session.session_id is not None
             assert session.session_key == session.application_key
@@ -184,7 +154,8 @@ class TestSession(object):
             assert session.decryption_key is None
             assert not session.encrypt_data
             assert session.encryption_key is None
-            assert len(session.preauth_integrity_hash_value) == 5
+            assert len(session.connection.preauth_integrity_hash_value) == 2
+            assert len(session.preauth_integrity_hash_value) == 3
             assert not session.require_encryption
             assert session.session_id is not None
             assert session.session_key == session.application_key
@@ -206,7 +177,8 @@ class TestSession(object):
             assert session.encrypt_data
             assert len(session.encryption_key) == 16
             assert session.encryption_key != session.session_key
-            assert len(session.preauth_integrity_hash_value) == 5
+            assert len(session.connection.preauth_integrity_hash_value) == 2
+            assert len(session.preauth_integrity_hash_value) == 3
             assert session.require_encryption
             assert session.session_id is not None
             assert len(session.session_key) == 16
@@ -229,7 +201,8 @@ class TestSession(object):
             assert session.encrypt_data
             assert len(session.encryption_key) == 16
             assert session.encryption_key != session.session_key
-            assert len(session.preauth_integrity_hash_value) == 5
+            assert len(session.connection.preauth_integrity_hash_value) == 2
+            assert len(session.preauth_integrity_hash_value) == 3
             assert session.require_encryption
             assert session.session_id is not None
             assert len(session.session_key) == 16
@@ -252,7 +225,8 @@ class TestSession(object):
             assert session.encrypt_data
             assert len(session.encryption_key) == 16
             assert session.encryption_key != session.session_key
-            assert len(session.preauth_integrity_hash_value) == 5
+            assert len(session.connection.preauth_integrity_hash_value) == 2
+            assert len(session.preauth_integrity_hash_value) == 3
             assert session.require_encryption
             assert session.session_id is not None
             assert len(session.session_key) == 16
@@ -277,7 +251,8 @@ class TestSession(object):
             assert session.encrypt_data
             assert len(session.encryption_key) == 16
             assert session.encryption_key != session.session_key
-            assert len(session.preauth_integrity_hash_value) == 5
+            assert len(session.connection.preauth_integrity_hash_value) == 2
+            assert len(session.preauth_integrity_hash_value) == 3
             assert session.require_encryption
             assert session.session_id is not None
             assert len(session.session_key) == 16
@@ -327,23 +302,13 @@ class TestSession(object):
             assert not session.encrypt_data
             assert len(session.encryption_key) == 16
             assert session.encryption_key != session.session_key
-            assert len(session.preauth_integrity_hash_value) == 5
+            assert len(session.connection.preauth_integrity_hash_value) == 2
+            assert len(session.preauth_integrity_hash_value) == 3
             assert not session.require_encryption
             assert session.session_id is not None
             assert len(session.session_key) == 16
             assert len(session.signing_key) == 16
             assert session.signing_key != session.session_key
             assert session.signing_required
-        finally:
-            connection.disconnect(True)
-
-    def test_invalid_user(self, smb_real):
-        connection = Connection(uuid.uuid4(), smb_real[2], smb_real[3])
-        connection.connect()
-        try:
-            session = Session(connection, "fakeuser", "fakepass")
-            with pytest.raises(SMBAuthenticationError) as exc:
-                session.connect()
-            assert "Failed to authenticate with server: " in str(exc.value)
         finally:
             connection.disconnect(True)

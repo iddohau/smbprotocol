@@ -3,31 +3,30 @@
 # Copyright: (c) 2019, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
 
+import os
+
 from setuptools import setup
 
-# PyPi supports only reStructuredText, so pandoc should be installed
-# before uploading package
-try:
-    import pypandoc
-    long_description = pypandoc.convert_file('README.md', 'rst')
-except ImportError:
-    long_description = ''
+
+def abs_path(rel_path):
+    return os.path.join(os.path.dirname(__file__), rel_path)
+
+
+with open(abs_path('README.md'), mode='rb') as fd:
+    long_description = fd.read().decode('utf-8')
 
 
 setup(
     name='smbprotocol',
-    version='1.0.2.dev0',
+    version='1.1.0',
     packages=['smbclient', 'smbprotocol'],
     install_requires=[
         'cryptography>=2.0',
-        'ntlm-auth>=1.2.0',
-        'pyasn1',
+        'pyspnego',
         'six',
     ],
     extras_require={
-        'kerberos:sys_platform=="win32"': [
-            'pywin32',
-        ],
+        'kerberos:sys_platform=="win32"': [],
         'kerberos:sys_platform!="win32"': [
             'gssapi>=1.4.1',
         ],
@@ -38,6 +37,7 @@ setup(
     url='https://github.com/jborean93/smbprotocol',
     description='Interact with a server using the SMB 2/3 Protocol',
     long_description=long_description,
+    long_description_content_type='text/markdown',
     keywords='smb smb2 smb3 cifs python',
     license='MIT',
     classifiers=[

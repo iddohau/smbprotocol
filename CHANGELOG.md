@@ -1,8 +1,18 @@
 # Changelog
 
-## 1.0.2 - TBD
+## 1.1.0 - 2020-08-14
 
-* Speed up logging statements for large messages like a read and write message.
+* Speed up logging statements for large messages like a read and write message
+* Changed authentication dep to [pyspnego](https://github.com/jborean93/pyspnego) that handles all the authentication work
+* Fixed up authentication against hosts that don't present the initial GSSAPI token like Azure File Storage
+* Added specific exception types for every `NtStatus` value to make it easier to catch only specific exceptions
+* Added the following exceptions  to the list of known exception codes
+    * `STATUS_NETWORK_NAME_DELETED`
+    * `STATUS_NOT_FOUND`
+    * `STATUS_PATH_NOT_COVERED`
+    * `STATUS_DFS_UNAVAILABLE`
+    * `STATUS_SERVER_UNAVAILABLE`
+* Fix session key generation when creating a new session from an existing connection object
 
 
 ## 1.0.1 - 2019-12-12
